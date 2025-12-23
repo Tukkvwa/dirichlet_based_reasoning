@@ -13,18 +13,20 @@ class SortingProblemGenerator(ProblemGenerator):
         scorer = lambda solution, input_: np.prod(np.array(solution) == np.array(solver(input_)))
         super().__init__(solver, scorer)
 
-    def generate_input(self, features):
-        input_ = []
-        if np.isnan(features[1]):
-            input_.append(self.generate_random_sequence(int(features[0]), int(features[0])))
+    def generate_problem(self, params, time_cost, list_type="random"):
+        problem = {}
+        if list_type=="pos":
+            problem["object"] = self.generate_partially_ordered_sequence(params[0], params[1])
+        elif list_type=="pros":
+            problem["object"] = self.generate_partially_reversely_ordered_sequence(params[0], params[1])
         else:
-            if features[1] <= 0.5:
-                input_.append(self.generate_partially_ordered_sequence(
-                    int(features[0]), features[1] / 2))
-            else:
-                input_.append(self.generate_partially_reversely_ordered_sequence(
-                    int(features[0]), 1 - features[1] / 2))
-        return np.array(input_)
+            problem["object"] = self.generate_random_sequence(params[0], params[1])
+        problem["scorer"]  = self.scorer
+        problem["solution"] = self.solver(self, problem["object"])
+        problem["time_cost"] = time_cost
+        problem["params"] = params
+
+        return problem
 
     def generate_random_sequence(self, number_of_elements, range_of_elements=None):
         if range_of_elements is None:

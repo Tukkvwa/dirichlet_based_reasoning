@@ -21,17 +21,9 @@ class MetaCognitiveAgent:
         start = time.time()
         #features = self.problem_analyzer.extractFeatures(problem['input']) if 'input' in problem else self.problem_analyzer.extract_features(problem)
         if algorithm is None:
-            algorithm = self.select_algorithm(features, problem.get('time_cost', 1), problem.get('payoffs', None))
-        solution, run_time = self.algorithm_executer.execute(problem['input'] if 'input' in problem else problem, algorithm)
-        experience = {
-            'total_time': (time.time() - start) * 1000,
-            'run_time': run_time,
-            'problem': problem,
-            'features': features,
-            'solution': solution,
-            'algorithm': algorithm
-        }   
-        return self, solution, experience
+            algorithm = self.select_algorithm(features, problem['time_cost'])
+        solution, run_time = self.algorithm_executer.execute(problem['object'] if 'object' in problem else problem, algorithm)   
+        return self, solution
 
     def select_algorithm(self, problem_features, time_cost, payoffs=None):
         self.meta_level_model.time_cost = time_cost
@@ -57,9 +49,9 @@ class MetaCognitiveAgent:
             a = available_indices[a_index]
         return a
 
-    def reflect(self, experience):
-        self.meta_level_model.update(experience['algorithm'], experience['features'],
-                                     experience['run_time'], experience["score"])                                    
+    def reflect(self, train_example):
+        self.meta_level_model.update(train_example['algorithm'], train_example['features'],
+                                     train_example['run_time'], train_example["score"])                                    
         #self.meta_level_model.model_selection(experience['algorithm'])
         return self
 

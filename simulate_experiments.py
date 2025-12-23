@@ -8,7 +8,7 @@ from MetaCognitiveSortingAgent import MetaCognitiveSortingAgent
 from SCADSSortingAgent import SCADSSortingAgent
 # Placeholders for agent classes and generator
 
-def create_experiments(nr_subjects : int, nr_trials: int):
+def create_experiments(train_trial_params, algorithms, algorithmsRT):
     """
     Create learning trials for nr_subjects number of subjects.
     Returns:
@@ -16,53 +16,44 @@ def create_experiments(nr_subjects : int, nr_trials: int):
         test_trials: list of test trials
     """
     experiments = []
-    for s in range(nr_subjects):
+    for no_alg, algorithm in enumerate(algorithms):
         expmnt = {}
         expmnt["duration"] = 0 #duration of learning tials, this is a placeholder
-        expmnt["learning_trials"] = {}
-        for t in range(nr_trials):
-            experience = {
-                'algorithm': algorithm_params[t],
-                'features': feature_params[t],
-                'problem': generator.generate_problem([feature_params[t][0], feature_params[t][1]/feature_params[t][0]],  0.1/1000),
+        expmnt["learning_trials"] = []
+        for problem_params in train_trial_params:
+            train_trial = {
+                'algorithm': no_alg,
+                'problem_params': problem_params,
+                'problem': generator.generate_problem(problem_params, 0.01),
             }
-            if algorithm_params[t]==1:
-                experience['run_time'] = MergeSortRunTimeModel.simulate_rt(experience['problem']['input'])
-            else:
-                experience['run_time'] = CocktailSortRunTimeModel.simulate_rt(experience['problem']['input'])
-            
-            # for non-binary scores, base the score on the run-time, assuming lower is better, the score should be one of 1,2,3,4 or 5
-            experience["score"] = max(1, min(5, 6 - int(experience['run_time'] / 1000)))  # example scoring function
+            train_trial['run_time'] = algorithmsRT[no_alg].simulate_rt(train_trial['problem']['object'])    
 
-            experience["score"] = int(experience['run_time'])  # example scoring function
-            expmnt["learning_trials"][t] = experience
+            # for non-binary scores, base the score on the run-time, assuming lower is better, the score should be one of 1,2,3,4 or 5
+            #train_trial["score"] = max(1, min(5, 6 - int(train_trial['run_time'] / 1000)))  # example scoring function
+            train_trial["score"] = int(train_trial['run_time'])  # example scoring function
+            expmnt["learning_trials"].append(train_trial)
         experiments.append(expmnt)
     
     test_trials = [
-        {'problem': {'input': generator.generate_random_sequence(64, 1000), 'time_cost': 0.01}},
-        {'problem': {'input': generator.generate_random_sequence(6, 1000), 'time_cost': 0.01}},
-        {'problem': {'input': generator.generate_partially_ordered_sequence(64, 0.01), 'time_cost': 0.01}},
-        {'problem': {'input': generator.generate_partially_ordered_sequence(6, 0.01), 'time_cost': 0.01}},
+        generator.generate_problem([64, 100], 0.01),
+        generator.generate_problem([6, 100], 0.01),
+        generator.generate_problem([64, 100], 0.01, "pos"),
+        generator.generate_problem([6, 100], 0.01, "pos")
     ]
     return experiments, test_trials
 
 def simulate_experiment(agent, learning_trials, test_trials):
-    for _, exp in learning_trials.items():
-        #print(exp['features'])
-        exp['features'] = np.array(exp['features']).reshape(1,-1)
-        #print(np.reshape(exp["problem"]["input"], (-1,1)))
-        #exp['features2'] = agent.problem_analyzer.extract_features(np.reshape(exp["problem"]["input"], (-1,1)))
-        #print(exp['features'])
-        agent.reflect(exp)
-
     choices = []
+    for train in learning_trials:
+        train['features'] = agent.problem_analyzer.extract_features(train["problem"]["object"])
+        agent.reflect(train)
+
     for test in test_trials:
-        agent, solution, experience = agent.solve_problem(test['problem'], exp['features'])
-        #experience['problem'] = test['problem']
+        test_features = agent.problem_analyzer.extract_features(test["object"])
+        agent, solution = agent.solve_problem(test, test_features)
         #experience['feedback'] = int((solution == sorted(test['problem']['input'])).all())
         #experience['correct'] = experience['feedback']
-        #experience['time_cost'] = test['problem']['time_cost']
-        choices.append(experience['algorithm'])
+        choices.append(solution)
     return choices
 
 
@@ -77,32 +68,32 @@ def simulate_experiment(agent, learning_trials, test_trials):
 plot_results = False
 
 
-# the numbers in the arrays in feature_params represent the number of elements to be sorted and the range of elements
+# the numbers in the arrays in train_trial_params represent the number of elements to be sorted and the range of elements
 # for example [4,4] means sorting 4 elements drawn from the range 1 to 4
-feature_params = np.array([
+train_trial_params = np.array([
     [4,4], [8,8], [16,16], [16,1], [4,4],
     [8,8], [16,16], [16,1], [36,36], [36,36]
 ])
-nr_trials = len(feature_params)
 
 # Hypotheses
-sorting_algorithms = [merge_sort, cocktail_sort]  # Placeholders
+algorithms = [merge_sort, cocktail_sort]
+algorithmsRT = [MergeSortRunTimeModel, CocktailSortRunTimeModel]  # Placeholders
 algorithm_params = np.array([0,0,0,0,1,1,1,1,0,1]) #which algorithm to use for each of the 10 trials, 0 = merge sort, 1 = cocktail sort
 
-nr_algorithms = len(sorting_algorithms)
+nr_algorithms = len(algorithms)
 #parameters = {'betas': np.ones(nr_algorithms)/nr_algorithms, 'r_max': 1, 'w': 1}
 
 
-model_based_agent = MetaCognitiveSortingAgent(False, sorting_algorithms)
+model_based_agent = MetaCognitiveSortingAgent(False, algorithms)
 categories = {
     'is_short': lambda input: len(input) <= 16,
     'is_long': lambda input: len(input) >= 32,
     'is_presorted': lambda input: np.mean(np.diff(input) >= 0) > 0.9,
     'is_disordered': lambda input: np.mean(np.diff(input) >= 0) < 0.5
 }
-SCADS_agent1 = SCADSSortingAgent(sorting_algorithms, 1, categories)
-SCADS_agent2 = SCADSSortingAgent(sorting_algorithms, 2, categories)
-SCADS_agent3 = SCADSSortingAgent(sorting_algorithms, 3, categories)
+SCADS_agent1 = SCADSSortingAgent(algorithms, 1, categories)
+SCADS_agent2 = SCADSSortingAgent(algorithms, 2, categories)
+SCADS_agent3 = SCADSSortingAgent(algorithms, 3, categories)
 
 agents = [model_based_agent, SCADS_agent1, SCADS_agent2, SCADS_agent3]
 model_names = ['VOC','SCADS1','SCADS2','SCADS3']
@@ -112,12 +103,23 @@ generator = SortingProblemGenerator()
 nr_subjects = len(agents)
 
 # Creating training (in experiments' learning trials) and learning trials
-experiments, test_trials = create_experiments(nr_subjects,nr_trials)
+experiments, test_trials = create_experiments(train_trial_params,algorithms, algorithmsRT)
 
 #for t in experiments[0]['learning_trials']: print(experiments[0]['learning_trials'][t])
 choices = []
 for a, agent in enumerate(agents):
     choices.append(simulate_experiment(agent, experiments[a]['learning_trials'], test_trials))
+
+
+
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+### Plotting
+
+
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 percentage_use_of_strategy2 = 100 * np.mean(choices)
 std_strategy_use = np.sqrt(percentage_use_of_strategy2/100 * (1 - percentage_use_of_strategy2/100))

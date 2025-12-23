@@ -9,14 +9,11 @@ class ProblemAnalyzer:
         self.nr_features = len(feature_extractors)
         self.categories = categories
 
-    def extract_features(self, inputs):
-        # inputs: each input is a column vector (2D numpy array)
-        nr_inputs = inputs.shape[1]
-        features = np.full((nr_inputs, self.nr_features), np.nan)
-        for i in range(nr_inputs):
-            for f, extractor in enumerate(self.feature_extractors):
-                features[i, f] = extractor(inputs[:, i])
-        return features
+    def extract_features(self, input_):
+        features = []
+        for extractor in self.feature_extractors:
+            features.append(extractor(input_))
+        return np.array([features])
 
     def extract_categories(self, inputs):
         if self.categories is None:

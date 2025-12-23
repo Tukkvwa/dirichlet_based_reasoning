@@ -7,12 +7,12 @@ class ProblemGenerator:
         # Placeholder for input generation logic
         return []
 
-    def generate_problem(self, features, time_cost):
+    def generate_problem(self, params, time_cost):
         problem = {}
-        problem_input = self.generate_input(features)
-        problem["input"] = problem_input
+        problem["object"] = self.generate_input(params)
         problem["scorer"]  = self.scorer
-        problem["solution"] = self.solver(self, problem_input)
+        problem["solution"] = self.solver(self, problem["object"])
         problem["time_cost"] = time_cost
+        problem["params"] = params
 
         return problem
