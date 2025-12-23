@@ -15,11 +15,11 @@ def create_experiments(nr_subjects : int, nr_trials: int):
         experiments: dict of experiments for each subject
         test_trials: list of test trials
     """
-    experiments = {}
+    experiments = []
     for s in range(nr_subjects):
-        experiments[s] = {}
-        experiments[s]["duration"] = 0 #duration of learning tials, this is a placeholder
-        experiments[s]["learning_trials"] = {}
+        expmnt = {}
+        expmnt["duration"] = 0 #duration of learning tials, this is a placeholder
+        expmnt["learning_trials"] = {}
         for t in range(nr_trials):
             experience = {
                 'algorithm': algorithm_params[t],
@@ -27,15 +27,16 @@ def create_experiments(nr_subjects : int, nr_trials: int):
                 'problem': generator.generate_problem([feature_params[t][0], feature_params[t][1]/feature_params[t][0]],  0.1/1000),
             }
             if algorithm_params[t]==1:
-                experience['run_time'] = MergeSortRunTimeModel.simulate_rt(experience['problem'])
+                experience['run_time'] = MergeSortRunTimeModel.simulate_rt(experience['problem']['input'])
             else:
-                experience['run_time'] = CocktailSortRunTimeModel.simulate_rt(experience['problem'])
+                experience['run_time'] = CocktailSortRunTimeModel.simulate_rt(experience['problem']['input'])
             
             # for non-binary scores, base the score on the run-time, assuming lower is better, the score should be one of 1,2,3,4 or 5
             experience["score"] = max(1, min(5, 6 - int(experience['run_time'] / 1000)))  # example scoring function
 
             experience["score"] = int(experience['run_time'])  # example scoring function
-            experiments[s]["learning_trials"][t] = experience
+            expmnt["learning_trials"][t] = experience
+        experiments.append(expmnt)
     
     test_trials = [
         {'problem': {'input': generator.generate_random_sequence(64, 1000), 'time_cost': 0.01}},
@@ -57,10 +58,10 @@ def simulate_experiment(agent, learning_trials, test_trials):
     choices = []
     for test in test_trials:
         agent, solution, experience = agent.solve_problem(test['problem'], exp['features'])
-        experience['problem'] = test['problem']
+        #experience['problem'] = test['problem']
         #experience['feedback'] = int((solution == sorted(test['problem']['input'])).all())
         #experience['correct'] = experience['feedback']
-        experience['time_cost'] = test['problem']['time_cost']
+        #experience['time_cost'] = test['problem']['time_cost']
         choices.append(experience['algorithm'])
     return choices
 
@@ -75,19 +76,21 @@ def simulate_experiment(agent, learning_trials, test_trials):
 
 plot_results = False
 
-# Experiment setup
-algorithm_names = ['merge sort', 'cocktail sort']
-algorithm_params = np.array([0,0,0,0,1,1,1,1,0,1])
-# the numbers in the arrays in feature_params epresent the number of elements to be sorted and the range of elements
+
+# the numbers in the arrays in feature_params represent the number of elements to be sorted and the range of elements
 # for example [4,4] means sorting 4 elements drawn from the range 1 to 4
 feature_params = np.array([
-    [4,4], [8,8], [16,16], [16,1], [4,4], [8,8], [16,16], [16,1], [36,36], [36,36]
+    [4,4], [8,8], [16,16], [16,1], [4,4],
+    [8,8], [16,16], [16,1], [36,36], [36,36]
 ])
+nr_trials = len(feature_params)
 
 # Hypotheses
 sorting_algorithms = [merge_sort, cocktail_sort]  # Placeholders
+algorithm_params = np.array([0,0,0,0,1,1,1,1,0,1]) #which algorithm to use for each of the 10 trials, 0 = merge sort, 1 = cocktail sort
+
 nr_algorithms = len(sorting_algorithms)
-parameters = {'betas': np.ones(nr_algorithms)/nr_algorithms, 'r_max': 1, 'w': 1}
+#parameters = {'betas': np.ones(nr_algorithms)/nr_algorithms, 'r_max': 1, 'w': 1}
 
 
 model_based_agent = MetaCognitiveSortingAgent(False, sorting_algorithms)
@@ -106,20 +109,17 @@ model_names = ['VOC','SCADS1','SCADS2','SCADS3']
 
 generator = SortingProblemGenerator()
 
-nr_subjects = 4
-nr_trials = len(feature_params)
-# Learning trials
+nr_subjects = len(agents)
 
+# Creating training (in experiments' learning trials) and learning trials
 experiments, test_trials = create_experiments(nr_subjects,nr_trials)
 
 #for t in experiments[0]['learning_trials']: print(experiments[0]['learning_trials'][t])
-    
-choices = np.zeros((len(test_trials), len(agents), nr_subjects), dtype=int)
-for s in range(nr_subjects):
-    for a, agent in enumerate(agents):
-        choices[:,a,s] = simulate_experiment(agent, experiments[s]['learning_trials'], test_trials)
+choices = []
+for a, agent in enumerate(agents):
+    choices.append(simulate_experiment(agent, experiments[a]['learning_trials'], test_trials))
 
-percentage_use_of_strategy2 = 100 * np.mean(choices == 2, axis=2)
+percentage_use_of_strategy2 = 100 * np.mean(choices)
 std_strategy_use = np.sqrt(percentage_use_of_strategy2/100 * (1 - percentage_use_of_strategy2/100))
 SEM_strategy_use = std_strategy_use / np.sqrt(nr_subjects)
 
