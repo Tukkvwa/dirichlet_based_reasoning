@@ -5,12 +5,12 @@ class MetaCognitiveAgent:
     """
     The metacognitive agent learns to select the resource-rational algorithm for a given problem.
     """
-    def __init__(self, algorithms, problem_analyzer, score_is_binary, time_cost=1, range_time=5*60, range_reward=20):
+    def __init__(self, algorithms, problem_analyzer, score_is_binary, time_cost=1, range_time=5*60, range_reward=20, seed=42):
         self.learn = True
         self.problem_analyzer = problem_analyzer
         self.nr_algorithms = len(algorithms)
         self.strategy_available = [True] * self.nr_algorithms
-        self.meta_level_model = MetaLevelModel(problem_analyzer.nr_features, self.nr_algorithms, score_is_binary, time_cost)
+        self.meta_level_model = MetaLevelModel(problem_analyzer.nr_features, self.nr_algorithms, score_is_binary, time_cost, seed=seed)
         self.algorithm_executer = AlgorithmExecuter(algorithms)
         self.score_is_binary = score_is_binary
         self.explore = True

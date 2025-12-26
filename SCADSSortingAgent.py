@@ -5,7 +5,7 @@ class SCADSSortingAgent(SCADSAgent):
     """
     Implementation of the Strategy Selection Component of the SCADS Model by Shrager and Siegler (1998).
     """
-    def __init__(self, sorting_algorithms, feedback_type, categories=None):
+    def __init__(self, sorting_algorithms, feedback_type, categories=None, seed=42):
         if categories is None:
             categories = {
                 'is_short': lambda input: len(input) <= 100,
@@ -20,4 +20,4 @@ class SCADSSortingAgent(SCADSAgent):
                 self.extract_features = extract_features
                 self.nr_features = len(categories)
         problem_analyzer = ProblemAnalyzerStub(extract_features)
-        super().__init__(sorting_algorithms, problem_analyzer, feedback_type) 
+        super().__init__(sorting_algorithms, problem_analyzer, feedback_type, seed=seed) 

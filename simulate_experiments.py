@@ -8,6 +8,8 @@ from MetaCognitiveSortingAgent import MetaCognitiveSortingAgent
 from SCADSSortingAgent import SCADSSortingAgent
 # Placeholders for agent classes and generator
 
+SEED = 9
+
 def create_experiments(train_trial_params, algorithms, algorithmsRT):
     """
     Create learning trials for nr_subjects number of subjects.
@@ -26,7 +28,7 @@ def create_experiments(train_trial_params, algorithms, algorithmsRT):
                 'problem_params': problem_params,
                 'problem': generator.generate_problem(problem_params, 0.01),
             }
-            train_trial['run_time'] = algorithmsRT[no_alg].simulate_rt(train_trial['problem']['object'])    
+            train_trial['run_time'] = algorithmsRT[no_alg].simulate_rt(train_trial['problem']['object'], seed=SEED)    
 
             # for non-binary scores, base the score on the run-time, assuming lower is better, the score should be one of 1,2,3,4 or 5
             #train_trial["score"] = max(1, min(5, 6 - int(train_trial['run_time'] / 1000)))  # example scoring function
@@ -50,6 +52,7 @@ def simulate_experiment(agent, experiments, test_trials):
             agent.reflect(train)
 
     for test in test_trials:
+        print(test["object"])
         test_features = agent.problem_analyzer.extract_features(test["object"])
         agent, choice, solution = agent.solve_problem(test, test_features)
         #experience['feedback'] = int((solution == sorted(test['problem']['input'])).all())
@@ -66,7 +69,6 @@ def simulate_experiment(agent, experiments, test_trials):
 
 ###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-plot_results = False
 
 
 # the numbers in the arrays in train_trial_params represent the number of elements to be sorted and the range of elements
@@ -85,21 +87,21 @@ nr_algorithms = len(algorithms)
 #parameters = {'betas': np.ones(nr_algorithms)/nr_algorithms, 'r_max': 1, 'w': 1}
 
 
-model_based_agent = MetaCognitiveSortingAgent(False, algorithms)
+model_based_agent = MetaCognitiveSortingAgent(False, algorithms, seed=SEED)
 categories = {
     'is_short': lambda input: len(input) <= 16,
     'is_long': lambda input: len(input) >= 32,
     'is_presorted': lambda input: np.mean(np.diff(input) >= 0) > 0.9,
     'is_disordered': lambda input: np.mean(np.diff(input) >= 0) < 0.5
 }
-SCADS_agent1 = SCADSSortingAgent(algorithms, 1, categories)
-SCADS_agent2 = SCADSSortingAgent(algorithms, 2, categories)
-SCADS_agent3 = SCADSSortingAgent(algorithms, 3, categories)
+SCADS_agent1 = SCADSSortingAgent(algorithms, 1, categories, seed=SEED)
+SCADS_agent2 = SCADSSortingAgent(algorithms, 2, categories, seed=SEED)
+SCADS_agent3 = SCADSSortingAgent(algorithms, 3, categories, seed=SEED)
 
 agents = [model_based_agent, SCADS_agent1, SCADS_agent2, SCADS_agent3]
 model_names = ['VOC','SCADS1','SCADS2','SCADS3']
 
-generator = SortingProblemGenerator()
+generator = SortingProblemGenerator(seed=SEED)
 
 nr_subjects = len(agents)
 
@@ -111,6 +113,7 @@ choices = []
 
 for a, agent in enumerate(agents):
     choices.append(simulate_experiment(agent, experiments, test_trials))
+
 print(choices)
 
 ###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -122,15 +125,17 @@ print(choices)
 ###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-percentage_use_of_strategy2 = 100 * np.mean(choices)
+percentage_use_of_strategy2 = 100 * np.mean(choices, axis=1)
 std_strategy_use = np.sqrt(percentage_use_of_strategy2/100 * (1 - percentage_use_of_strategy2/100))
 SEM_strategy_use = std_strategy_use / np.sqrt(nr_subjects)
 
+#plot_results = True
+plot_results = False
 
 if plot_results:
     # Plotting
     plt.figure()
-    plt.bar(np.arange(len(model_names)), percentage_use_of_strategy2[0], yerr=100*1.96*(SEM_strategy_use[0]+0.01))
+    plt.bar(np.arange(len(model_names)), percentage_use_of_strategy2, yerr=100*1.96*(SEM_strategy_use+0.01))
     plt.ylabel('Choice of Merge Sort (%)', fontsize=18)
     plt.xlabel('Strategy Selection Model', fontsize=18)
     plt.xticks(np.arange(len(model_names)), model_names, rotation=45, fontsize=14)

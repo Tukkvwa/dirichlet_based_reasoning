@@ -1,7 +1,8 @@
 import numpy as np
 
 class MetaLevelModel:
-    def __init__(self, nr_features, nr_algorithms, score_is_binary, time_cost):
+    def __init__(self, nr_features, nr_algorithms, score_is_binary, time_cost, seed=42):
+        self.seed = seed
         self.nr_algorithms = nr_algorithms
         self.score_is_binary = score_is_binary
         self.time_cost = time_cost
@@ -80,6 +81,7 @@ class MetaLevelModel:
         return E_run_time, E_score, sigma_run_time, sigma_score
 
     def sampleVOC(self, problem_features, nr_samples, min_payoff=None, max_payoff=None, payoffs=None):
+        np.random.seed(self.seed)
         regressors, _ = self.construct_regressors(problem_features)
         run_times = np.zeros((self.nr_algorithms, nr_samples))
         scores = np.zeros((self.nr_algorithms, nr_samples))

@@ -45,7 +45,9 @@ class CocktailSortRunTimeModel:
               CocktailSortRunTimeModel.time_per_move * nr_moves)
         return RT
 
-    def simulate_rt(lst):
+    def simulate_rt(lst, seed=42):
+        random.seed(42)
+        
         expected_rt = CocktailSortRunTimeModel.predict_rt(lst)
         RT = expected_rt + math.sqrt(expected_rt ** 2 * CocktailSortRunTimeModel.relative_sigma2) * random.gauss(0, 1)
         return RT

@@ -110,7 +110,9 @@ class MergeSortRunTimeModel:
               MergeSortRunTimeModel.time_per_move * nr_moves)
         return RT
 
-    def simulate_rt(lst):
+    def simulate_rt(lst, seed=42):
+        np.random.seed(seed)
+        
         expected_RT = MergeSortRunTimeModel.predict_rt(lst)
         RT = expected_RT + np.sqrt(expected_RT ** 2 * MergeSortRunTimeModel.relative_sigma2) * np.random.randn()
         return RT

@@ -11,7 +11,7 @@ class MetaCognitiveSortingAgent(MetaCognitiveAgent):
     """
     A metacognitive sorting agent with optional feature extractors.
     """
-    def __init__(self, score_is_binary, algorithms=None, time_cost=1, use_features=True):
+    def __init__(self, score_is_binary, algorithms=None, time_cost=1, use_features=True, seed=42):
         if algorithms is None:
             print("No algorithms provided, using default algorithms.")
             algorithms = [
@@ -36,7 +36,7 @@ class MetaCognitiveSortingAgent(MetaCognitiveAgent):
         range_time = 3 * 60
         range_reward = logit(0.99)
         super().__init__(algorithms, problem_analyzer, score_is_binary, time_cost, range_time, range_reward)
-        self.metalevel_model = MetaLevelModel(self.problem_analyzer.nr_features, self.algorithm_executer.nr_algorithms, score_is_binary, time_cost)
+        self.metalevel_model = MetaLevelModel(self.problem_analyzer.nr_features, self.algorithm_executer.nr_algorithms, score_is_binary, time_cost, seed=seed)
         self.metalevel_model.regressor_names = [
             '1','n','i','log(n)','log(i)','n*i','n*log(n)','n*log(i)',
             'i*log(n)','i*log(i)','log(n)*log(i)','l^2','i^2','log(n)^2','log(i)^2'

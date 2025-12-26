@@ -7,10 +7,11 @@ class SortingProblemGenerator(ProblemGenerator):
     This class generates sorting problems.
     """
 
-    def __init__(self):
+    def __init__(self, seed=11):
         # the solver provides the optimal solution
         solver = lambda input_: quick_sort(input_)
         scorer = lambda solution, input_: np.prod(np.array(solution) == np.array(solver(input_)))
+        np.random.seed(seed)
         super().__init__(solver, scorer)
 
     def generate_problem(self, params, time_cost, list_type="random"):
