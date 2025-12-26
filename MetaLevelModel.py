@@ -5,7 +5,7 @@ class MetaLevelModel:
         self.nr_algorithms = nr_algorithms
         self.score_is_binary = score_is_binary
         self.time_cost = time_cost
-        self.nr_regressors = 1 + 3 * nr_features + 2 * nr_features ** 2
+        self.nr_regressors = 1 + 3 * nr_features + 2 * nr_features ** 2 #taking into account interactions and polynomial terms
         self.max_nr_regressors = self.nr_regressors
 
         self.glm_runtime = []
@@ -166,11 +166,16 @@ class MetaLevelModel:
         return basic_features
 
     def construct_regressors(self, basic_features):
+        """
+        Construct regressors from basic features including interaction and polynomial terms.
+        """
         nr_basic_features = basic_features.shape[1] if basic_features.size > 0 else 0
         features = np.copy(basic_features)
         extended_features = []
+
         if nr_basic_features > 0:
             extended_features = [f'feature{f+1}' for f in range(nr_basic_features)]
+        
         for f in range(nr_basic_features):
             log_feat = np.log(basic_features[:, f] + 1)
             features = np.hstack((features, log_feat[:, None]))

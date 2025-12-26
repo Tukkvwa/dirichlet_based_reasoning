@@ -12,18 +12,14 @@ class MetaCognitiveAgent:
         self.strategy_available = [True] * self.nr_algorithms
         self.meta_level_model = MetaLevelModel(problem_analyzer.nr_features, self.nr_algorithms, score_is_binary, time_cost)
         self.algorithm_executer = AlgorithmExecuter(algorithms)
-        self.nr_algorithms = self.algorithm_executer.nr_algorithms
         self.score_is_binary = score_is_binary
         self.explore = True
 
     def solve_problem(self, problem, features, algorithm=None):
-        import time
-        start = time.time()
-        #features = self.problem_analyzer.extractFeatures(problem['input']) if 'input' in problem else self.problem_analyzer.extract_features(problem)
         if algorithm is None:
             algorithm = self.select_algorithm(features, problem['time_cost'])
         solution, run_time = self.algorithm_executer.execute(problem['object'] if 'object' in problem else problem, algorithm)   
-        return self, solution
+        return self, algorithm, solution
 
     def select_algorithm(self, problem_features, time_cost, payoffs=None):
         self.meta_level_model.time_cost = time_cost

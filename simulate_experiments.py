@@ -16,11 +16,11 @@ def create_experiments(train_trial_params, algorithms, algorithmsRT):
         test_trials: list of test trials
     """
     experiments = []
-    for no_alg, algorithm in enumerate(algorithms):
+    for problem_params in train_trial_params:
         expmnt = {}
         expmnt["duration"] = 0 #duration of learning tials, this is a placeholder
         expmnt["learning_trials"] = []
-        for problem_params in train_trial_params:
+        for no_alg, algorithm in enumerate(algorithms):
             train_trial = {
                 'algorithm': no_alg,
                 'problem_params': problem_params,
@@ -42,18 +42,19 @@ def create_experiments(train_trial_params, algorithms, algorithmsRT):
     ]
     return experiments, test_trials
 
-def simulate_experiment(agent, learning_trials, test_trials):
+def simulate_experiment(agent, experiments, test_trials):
     choices = []
-    for train in learning_trials:
-        train['features'] = agent.problem_analyzer.extract_features(train["problem"]["object"])
-        agent.reflect(train)
+    for expmt in experiments:
+        for train in expmt["learning_trials"]:
+            train['features'] = agent.problem_analyzer.extract_features(train["problem"]["object"])
+            agent.reflect(train)
 
     for test in test_trials:
         test_features = agent.problem_analyzer.extract_features(test["object"])
-        agent, solution = agent.solve_problem(test, test_features)
+        agent, choice, solution = agent.solve_problem(test, test_features)
         #experience['feedback'] = int((solution == sorted(test['problem']['input'])).all())
         #experience['correct'] = experience['feedback']
-        choices.append(solution)
+        choices.append(choice)
     return choices
 
 
@@ -103,14 +104,14 @@ generator = SortingProblemGenerator()
 nr_subjects = len(agents)
 
 # Creating training (in experiments' learning trials) and learning trials
-experiments, test_trials = create_experiments(train_trial_params,algorithms, algorithmsRT)
+experiments, test_trials = create_experiments(train_trial_params, algorithms, algorithmsRT)
 
 #for t in experiments[0]['learning_trials']: print(experiments[0]['learning_trials'][t])
 choices = []
+
 for a, agent in enumerate(agents):
-    choices.append(simulate_experiment(agent, experiments[a]['learning_trials'], test_trials))
-
-
+    choices.append(simulate_experiment(agent, experiments, test_trials))
+print(choices)
 
 ###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
