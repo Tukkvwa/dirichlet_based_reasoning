@@ -35,7 +35,7 @@ class MetaCognitiveSortingAgent(MetaCognitiveAgent):
         problem_analyzer = ProblemAnalyzer(feature_extractors)
         range_time = 3 * 60
         range_reward = logit(0.99)
-        super().__init__(algorithms, problem_analyzer, score_is_binary, time_cost, range_time, range_reward)
+        super().__init__(algorithms, problem_analyzer, score_is_binary, time_cost, range_time, range_reward, seed=seed)
         self.metalevel_model = MetaLevelModel(self.problem_analyzer.nr_features, self.algorithm_executer.nr_algorithms, score_is_binary, time_cost, seed=seed)
         self.metalevel_model.regressor_names = [
             '1','n','i','log(n)','log(i)','n*i','n*log(n)','n*log(i)',

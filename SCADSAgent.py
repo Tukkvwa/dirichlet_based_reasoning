@@ -6,7 +6,7 @@ class SCADSAgent(MetaCognitiveAgent):
     SCADSAgent: Strategy Selection Component of the SCADS Model.
     """
     def __init__(self, strategies, feature_extractor, feedback_type, relative_strengths=None, total_strength=None, seed=42):
-        super().__init__(strategies, feature_extractor, False)
+        super().__init__(strategies, feature_extractor, False, seed=seed)
         nr_strategies = len(strategies)
         if relative_strengths is None:
             relative_strengths = np.ones(nr_strategies) / nr_strategies

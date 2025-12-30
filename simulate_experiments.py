@@ -8,7 +8,7 @@ from MetaCognitiveSortingAgent import MetaCognitiveSortingAgent
 from SCADSSortingAgent import SCADSSortingAgent
 # Placeholders for agent classes and generator
 
-SEED = 9
+SEED = 99
 
 def create_experiments(train_trial_params, algorithms, algorithmsRT):
     """
@@ -52,7 +52,6 @@ def simulate_experiment(agent, experiments, test_trials):
             agent.reflect(train)
 
     for test in test_trials:
-        print(test["object"])
         test_features = agent.problem_analyzer.extract_features(test["object"])
         agent, choice, solution = agent.solve_problem(test, test_features)
         #experience['feedback'] = int((solution == sorted(test['problem']['input'])).all())
